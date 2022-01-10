@@ -47,11 +47,14 @@ app.get('/authorize', function(req, res){
 
 	/*
 	 * Send the user to the authorization server
-	 */
+	*/
+	state = randomstring.generate();
+
 	var authorizeUrl = buildUrl(authServer.authorizationEndpoint, {
 		response_type: 'code',
 		client_id: client.client_id,
-		redirect_uri: client.redirect_uris[0]
+		redirect_uri: client.redirect_uris[0],
+		state: state
 	});
 
 	console.log("redirect", authorizeUrl);
@@ -63,12 +66,17 @@ app.get('/callback', function(req, res){
 	/*
 	 * Parse the response from the authorization server and get a token
 	 */	
+	if (req.query.state != state) {
+		res.render('error', { error: 'State value did not match' });
+		return;
+	}
+	
 	var code  = req.query.code;
 	
 	var form_data = qs.stringify({
 		grant_type: 'authorization_code',
 		code: code,
-		redirect_uri: client.redirect_uris[0]
+		redirect_uri: client.redirect_uris[0],
 	});
 	var headers = {
 		'Content-Type': 'application/x-www-form-urlencoded',
